@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "120240812673",
+    "firebase_url": "https://newkdugo-default-rtdb.firebaseio.com",
+    "project_id": "newkdugo",
+    "storage_bucket": "newkdugo.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120240812673:android:ca7d870697b3f14109d380",
+        "android_client_info": {
+          "package_name": "com.kdugo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "120240812673-3k44595ode3slq6idc3uq1qc7rf998ss.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMdK9oyRQzUHhJSYaxZ971Ne0LKxTYzBI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "120240812673-3k44595ode3slq6idc3uq1qc7rf998ss.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
