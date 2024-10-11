@@ -9,6 +9,7 @@ import {
   View,
   SafeAreaView,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import {createUserWithEmailAndPassword} from 'firebase/auth';
 import {setDoc, doc} from 'firebase/firestore';
@@ -24,25 +25,74 @@ const Registration = () => {
   const [enrollmentNum, setEnrollmentNum] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState('student');
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
-  const handleRegister = async () => {
-    if (
-      !email ||
-      !password ||
-      !confirmPassword ||
-      !fullName ||
-      !enrollmentNum ||
-      !phoneNumber
-    ) {
-      Alert.alert('Registration Error', 'Please fill in all fields');
-      return;
+  const validateInputs = () => {
+    // Email validation
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})$/;
+    if (!email) {
+      showAlert('Email is required');
+      return false;
+    } else if (!emailRegex.test(email)) {
+      showAlert('Please enter a valid email address');
+      return false;
     }
 
+    // Password validation
+    if (!password) {
+      showAlert('Password is required');
+      return false;
+    } else if (password.length < 6) {
+      showAlert('Password must be at least 6 characters long');
+      return false;
+    }
+
+    // Confirm password validation
     if (password !== confirmPassword) {
-      Alert.alert('Registration Error', 'Passwords do not match');
+      showAlert('Passwords do not match');
+      return false;
+    }
+
+    // Full name validation
+    if (!fullName) {
+      showAlert('Full name is required');
+      return false;
+    }
+
+    // Enrollment number validation
+    if (!enrollmentNum) {
+      showAlert(
+        role === 'student'
+          ? 'Student Enrollment Number is required'
+          : 'Lecturer ID is required',
+      );
+      return false;
+    }
+
+    // Phone number validation
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneNumber) {
+      showAlert('Phone number is required');
+      return false;
+    } else if (!phoneRegex.test(phoneNumber)) {
+      showAlert('Phone number must be exactly 10 digits');
+      return false;
+    }
+
+    return true;
+  };
+
+  const showAlert = message => {
+    Alert.alert('Registration Error', message);
+  };
+
+  const handleRegister = async () => {
+    if (!validateInputs()) {
       return;
     }
+    setIsLoading(true);
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -59,12 +109,19 @@ const Registration = () => {
         phoneNumber: phoneNumber,
         role: role,
       });
-
+      setIsLoading(false);
       console.log('Registered with:', user.email, 'as', role);
-      navigation.navigate('SigninScreen', {justRegistered: true});
+      Alert.alert('Success', 'Registration successful!', [
+        {
+          text: 'OK',
+          onPress: () =>
+            navigation.navigate('SigninScreen', {justRegistered: true}),
+        },
+      ]);
     } catch (error) {
       console.log('Registration Error:', error.message);
-      Alert.alert('Registration Error', error.message);
+      setIsLoading(false);
+      showAlert(error.message);
     }
   };
 
@@ -106,6 +163,7 @@ const Registration = () => {
                 style={styles.input}
                 placeholderTextColor="#999"
                 keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
             <View style={styles.inputWrapper}>
@@ -163,55 +221,20 @@ const Registration = () => {
                 style={styles.input}
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
+                maxLength={10}
               />
-            </View>
-            <Text style={styles.roleLabel}>Select your role:</Text>
-            <View style={styles.roleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === 'student' && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole('student')}>
-                <Icon
-                  name="graduation-cap"
-                  type="font-awesome"
-                  size={20}
-                  color={role === 'student' ? 'white' : '#f5bda2'}
-                />
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'student' && styles.roleButtonTextActive,
-                  ]}>
-                  Student
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === 'lecturer' && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole('lecturer')}>
-                <Icon
-                  name="chalkboard-teacher"
-                  type="font-awesome-5"
-                  size={20}
-                  color={role === 'lecturer' ? 'white' : '#f5bda2'}
-                />
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'lecturer' && styles.roleButtonTextActive,
-                  ]}>
-                  Lecturer
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={handleRegister} style={styles.button}>
-              <Text style={styles.buttonText}>Register</Text>
+            <TouchableOpacity
+              onPress={handleRegister}
+              style={styles.button}
+              disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.buttonText}>Register</Text>
+              )}
             </TouchableOpacity>
           </View>
           <View style={styles.loginContainer}>
@@ -228,6 +251,13 @@ const Registration = () => {
 };
 
 const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#ff8c52',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center', // Add this to center the ActivityIndicator
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

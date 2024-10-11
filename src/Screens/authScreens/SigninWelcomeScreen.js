@@ -52,10 +52,16 @@ const SigninWelcomeScreen = ({navigation}) => {
 
       <View style={styles.buttonContainer}>
         <Button
-          title="Get Started"
+          title="Student"
           buttonStyle={styles.button}
           titleStyle={styles.buttonTitle}
           onPress={() => navigation.navigate('Registration')}
+        />
+        <Button
+          title="Lecture"
+          buttonStyle={styles.lecbutton}
+          titleStyle={styles.buttonTitle}
+          onPress={() => navigation.navigate('SigninScreen')}
         />
       </View>
     </SafeAreaView>
@@ -119,6 +125,12 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#ff8c52',
+    borderRadius: 8,
+    height: 50,
+    marginBottom: 15,
+  },
+  lecbutton: {
+    backgroundColor: '#e07b48',
     borderRadius: 8,
     height: 50,
     marginBottom: 15,

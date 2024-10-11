@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
+  Modal,
 } from 'react-native';
 import {
   signInWithEmailAndPassword,
@@ -25,10 +26,35 @@ const Login = ({route}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const navigation = useNavigation();
   const hasMounted = useRef(false);
 
+  const validateInputs = () => {
+    let isValid = true;
+
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})$/;
+
+    if (!email) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address');
+      isValid = false;
+    } else {
+      setEmailError('');
+    }
+
+    return isValid;
+  };
+
   const handleLogin = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const userCredentials = await signInWithEmailAndPassword(
@@ -51,15 +77,42 @@ const Login = ({route}) => {
 
         navigation.navigate('HomeScreen');
       } else {
-        console.log('No user data found in Firestore');
-        Alert.alert('Error', 'User data not found. Please contact support.');
+        throw new Error('user_data_not_found');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Login Error', error.message);
+      console.error('Login error:', error.code);
+      handleLoginError(error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLoginError = error => {
+    let message = 'An unexpected error occurred. Please try again later.';
+
+    switch (error.code) {
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        message = 'Invalid email or password. Please try again.';
+        break;
+      case 'auth/invalid-email':
+        message = 'Invalid email address. Please check and try again.';
+        break;
+      case 'auth/user-disabled':
+        message = 'This account has been disabled. Please contact support.';
+        break;
+      case 'auth/too-many-requests':
+        message =
+          'Too many unsuccessful login attempts. Please try again later.';
+        break;
+    }
+
+    if (error.message === 'user_data_not_found') {
+      message = 'User data not found. Please contact support.';
+    }
+
+    Alert.alert('Login Error', message);
   };
 
   const forgotPassword = () => {
@@ -73,7 +126,7 @@ const Login = ({route}) => {
           );
         })
         .catch(error => {
-          Alert.alert('Error', error.message);
+          handleLoginError(error);
         })
         .finally(() => {
           setIsLoading(false);
@@ -87,7 +140,7 @@ const Login = ({route}) => {
   };
 
   const navigateToRegister = () => {
-    navigation.navigate('Registration'); // Make sure you have a 'Register' screen in your navigation stack
+    navigation.navigate('Registration');
   };
 
   return (
@@ -104,50 +157,67 @@ const Login = ({route}) => {
               placeholder="Email"
               placeholderTextColor="#A0A0A0"
               value={email}
-              onChangeText={setEmail}
-              style={styles.input}
+              onChangeText={text => {
+                setEmail(text);
+                setEmailError('');
+              }}
+              style={[styles.input, emailError && styles.inputError]}
               editable={!isLoading}
               autoCapitalize="none"
               keyboardType="email-address"
             />
+            {emailError ? (
+              <Text style={styles.errorText}>{emailError}</Text>
+            ) : null}
             <TextInput
               placeholder="Password"
               placeholderTextColor="#A0A0A0"
               value={password}
-              onChangeText={setPassword}
-              style={styles.input}
+              onChangeText={text => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+              style={[styles.input, passwordError && styles.inputError]}
               secureTextEntry
               editable={!isLoading}
             />
+            {passwordError ? (
+              <Text style={styles.errorText}>{passwordError}</Text>
+            ) : null}
           </View>
           <View style={styles.buttonContainer}>
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#ff8c52" />
-            ) : (
-              <>
-                <TouchableOpacity
-                  onPress={handleLogin}
-                  style={styles.loginButton}>
-                  <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={forgotPassword}
-                  style={styles.forgotPasswordButton}>
-                  <Text style={styles.forgotPasswordText}>
-                    Forgot Password?
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
+            <TouchableOpacity
+              onPress={handleLogin}
+              style={styles.loginButton}
+              disabled={isLoading}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={forgotPassword}
+              style={styles.forgotPasswordButton}
+              disabled={isLoading}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account? </Text>
             <TouchableOpacity onPress={navigateToRegister}>
-              <Text style={styles.registerLink}>Register</Text>
+              <Text style={styles.registerLink}>Student Registeration</Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
+      <Modal
+        transparent={true}
+        animationType="fade"
+        visible={isLoading}
+        onRequestClose={() => {}}>
+        <View style={styles.modalBackground}>
+          <View style={styles.activityIndicatorWrapper}>
+            <ActivityIndicator size="large" color="#ff8c52" />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -227,6 +297,51 @@ const styles = StyleSheet.create({
     color: '#ff8c52',
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  inputError: {
+    borderColor: 'red',
+    borderWidth: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  modalBackground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  activityIndicatorWrapper: {
+    backgroundColor: 'white',
+    height: 100,
+    width: 100,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    maxWidth: '80%',
+  },
+  errorModalText: {
+    fontSize: 16,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  errorModalButton: {
+    backgroundColor: '#ff8c52',
+    padding: 10,
+    borderRadius: 5,
+  },
+  errorModalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
