@@ -31,7 +31,7 @@ const Registration = () => {
   const validateInputs = () => {
     // Email validation
     const emailRegex =
-      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})$/;
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
     if (!email) {
       showAlert('Email is required');
       return false;
@@ -84,6 +84,37 @@ const Registration = () => {
     return true;
   };
 
+   const handleLoginError = error => {
+     let message = 'An unexpected error occurred. Please try again later.';
+
+     switch (error.code) {
+       case 'auth/user-not-found':
+       case 'auth/wrong-password':
+       case 'auth/invalid-credential':
+         message = 'Invalid email or password. Please try again.';
+         break;
+       case 'auth/invalid-email':
+         message = 'Invalid email address. Please check and try again.';
+         break;
+       case 'auth/email-already-in-use':
+         message = 'Email already in use. Please check and try again.';
+         break;
+       case 'auth/user-disabled':
+         message = 'This account has been disabled. Please contact support.';
+         break;
+       case 'auth/too-many-requests':
+         message =
+           'Too many unsuccessful login attempts. Please try again later.';
+         break;
+     }
+
+     if (error.message === 'user_data_not_found') {
+       message = 'User data not found. Please contact support.';
+     }
+
+     Alert.alert('Registration Error', message);
+   };
+
   const showAlert = message => {
     Alert.alert('Registration Error', message);
   };
@@ -121,7 +152,8 @@ const Registration = () => {
     } catch (error) {
       console.log('Registration Error:', error.message);
       setIsLoading(false);
-      showAlert(error.message);
+      // showAlert(error.message);
+      handleLoginError(error)
     }
   };
 
